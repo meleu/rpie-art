@@ -1,0 +1,4 @@
+system = "snes"
+game_name = "Mega Man X"
+launching_image = "~/RetroPie/splashscreens/retropie-extra/rookervik-megaman-x.png"
+

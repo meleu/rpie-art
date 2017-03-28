@@ -1,0 +1,3 @@
+game_name = "Contra"
+launching_image = "~/RetroPie/splashscreens/retropie-extra/lilbud-contra.jpg"
+system = "nes"

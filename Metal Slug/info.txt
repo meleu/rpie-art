@@ -1,0 +1,4 @@
+system = "arcade"
+game_name = "Metal Slug"
+launching_image = "~/RetroPie/splashscreens/retropie-extra/rookervik-metal-slug.png"
+

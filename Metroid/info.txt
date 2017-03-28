@@ -1,0 +1,3 @@
+system = "nes"
+game_name = "Metroid"
+launching_image = "~/RetroPie/splashscreens/retropie-extra/im-german-lets-party-metroid.jpg"
