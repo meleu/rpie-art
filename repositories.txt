@@ -1,0 +1,2 @@
+https://github.com/meleu/rpie-art "The repository of this script. Uses some files from retropie-splashscreens-extra."
+https://github.com/udb23/rpie-ovl "UDb23 overlay (and other arts) repository"
