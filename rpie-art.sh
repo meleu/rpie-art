@@ -2,7 +2,7 @@
 # rpie-art.sh
 #
 # TODO:
-# - check info.txt integrity
+# - check info.txt integrity (invalid characters: ';')
 
 if ! source /opt/retropie/lib/inifuncs.sh ; then
     echo "ERROR: \"inifuncs.sh\" file not found! Aborting..." >&2
@@ -15,6 +15,8 @@ readonly REPO_FILE="$scriptdir/repositories.txt"
 readonly SCRIPT_REPO="$(head -1 "$scriptdir/repositories.txt" | cut -d' ' -f1)"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
 readonly ART_DIR="$HOME/RetroPie/art"
+readonly ROMS_DIR="$HOME/RetroPie/roms"
+readonly CONFIG_DIR="/opt/retropie/configs"
 readonly SPLASHSCREEN_EXTRA_REPO="https://github.com/HerbFargus/retropie-splashscreens-extra"
 readonly SPLASHSCREEN_EXTRA_DIR="$HOME/RetroPie/splashscreens/retropie-extra"
 
@@ -77,6 +79,7 @@ function main_menu() {
         choice=$( "${cmd[@]}" "${options[@]}" 2>&1 > /dev/tty )
 
         case "$choice" in 
+# TODO: decidir se vou utilizar esse método de update ou criar um scriptmodule
             U)      update_repo "$repo_rpie_art" ;;
             [0-9])  repo_menu "${options[3*choice+1]}" ;;
             *)      break ;;
@@ -94,18 +97,17 @@ function repo_menu() {
 
     local repo_url="$1"
     local repo=$(basename "$repo_url")
+    local repo_dir="$ART_DIR/$repo"
 
-    if ! [[ -d "$ART_DIR/$repo" ]]; then
+    if ! [[ -d "$repo_dir" ]]; then
         dialogYesNo "You don't have the files from \"$repo_url\".\n\nDo you want to get them now?\n(it may take a few minutes)" \
         || return 1
+# TODO: give a better feedback about what's going on (check dialog --gauge)
         dialogInfo "Getting files from \"$repo_url\".\n\nPlease wait..."
-        git_clone_art_repo "$repo_url" || return 1
-    fi
-
-    if [[ "$repo_url" == "$SCRIPT_REPO" && ! -d "$HOME/RetroPie/splashscreens/retropie-extra" ]]; then
-        dialogYesNo "The $repo uses some splashscreens from \"$SPLASHSCREEN_EXTRA_REPO\" and you don't have these files. Do you want to get them now?" \
-        || return 1
-        git_clone_art_repo "$SPLASHSCREEN_EXTRA_REPO" "$SPLASHSCREEN_EXTRA_DIR" || return 1
+        if ! get_repo_art "$repo_url" "$repo_dir"; then
+            dialogMsg "ERROR: failed to download (git clone) files from $repo_url\n\nPlease check your connection and try again."
+            return 1
+        fi
     fi
 
     local cmd=( dialogMenu "Options for $repo_url repository." )
@@ -122,11 +124,11 @@ function repo_menu() {
         choice=$( "${cmd[@]}" "${options[@]}" )
 
         case "$choice" in
-            U)  update_repo "$repo" ;;
-            D)  delete_local_repo "$repo" ;;
-            O)  art_menu overlay "$repo" ;;
-            L)  art_menu launching "$repo" ;;
-            S)  art_menu scrape "$repo" ;;
+            U)  update_repo ;;
+            D)  delete_local_repo ;;
+            O)  art_menu overlay ;;
+            L)  art_menu launching ;;
+            S)  art_menu scrape ;;
             *)  break ;;
         esac
     done
@@ -135,26 +137,17 @@ function repo_menu() {
 
 
 function art_menu() {
-    if [[ "$#" -lt 2 ]]; then
-        echo "ERROR: art_menu(): missing arguments." >&2
+    if ! [[ "$1" =~ ^(overlay|launching|scrape) ]]; then
+        echo "ERROR: art_menu(): invalid art type \"$1\"."
         exit 1
     fi
 
     local art_type="$1"
-    local repo="$2"
-    local repo_dir="$ART_DIR/$repo"
     local infotxt
     local i=1
-
-    local system
-    local game_name
-    local launching_image
-    local scrape_image
     local tmp
     local options=()
-    local art_options=()
     local choice
-    declare -Ag game_info
 
     dialogInfo "Getting $art_type art info for \"$repo\" repository."
 
@@ -175,28 +168,70 @@ function art_menu() {
     while true; do
         choice=$(dialogMenu "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
         || break
-        infotxt="${options[2*choice-1]}"
-# TODO: RECOMEÇAR AQUI!!!
+        infotxt="$ART_DIR/$repo/${options[2*choice-1]}/info.txt"
+
+        case "$art_type" in
+            overlay)    install_overlay_menu ;;
+            launching)  install_launching_menu ;;
+            scrape)     install_scrape_menu ;;
+        esac
     done
 }
+
+
+
+function install_launching_menu() {
+    local system="$(get_value system "$infotxt")"
+    local game_name="$(get_value game_name "$infotxt")"
+    local launching_image="$(get_value launching_image "$infotxt")"
+    local sys game image
+    local destination_dir="$ROMS_DIR"
+    [[ "$game_name" == "_generic" ]] && destination_dir="$CONFIG_DIR/"
+    local options=()
+    local choice
+    local i=1
+    declare -Ag images
+
+    oldIFS="$IFS"
+    IFS=';'
+    for image in $launching_image; do
+        images[$i]="$image"
+        options+=( $((i++)) "$(basename "$image")" )
+    done
+    IFS="$oldIFS"
+    
+    while true; do
+        choice=$(dialogMenu "Launching image list for ${game_name}." "${options[@]}") \
+        || return
+        image="${images[$choice]}"
+
+        image="$(check_file "$image")"
+        if [[ -z "$image" ]]; then
+            dialogMsg "We had some problem with the file \"$image\"!\n\nUpdate files form remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
+            return 1
+        fi
+
+        show_image "$image"
+        # TODO: RECOMEÇAR AQUI
+    done
+}
+
 
 # end of menu functions #####################################################
 
 
 # other functions ###########################################################
 
-function git_clone_art_repo() {
-    local repo_url="$1"
-    local repo=$(basename "$repo_url")
-    local destination_dir="${2:-"$ART_DIR/$repo"}"
-
-    if ! git clone --depth 1 "$repo_url" "$destination_dir"; then
-        dialogMsg "ERROR: failed to download (git clone) files from $repo_url\n\nPlease check your connection and try again."
-        return 1
+function get_repo_art() {
+    if [[ -d "$repo_dir/.git" ]]; then
+        cd "$repo_dir"
+        git fetch --prune
+        git reset --hard origin/master > /dev/null
+        git clean -f -d
+        cd -
+    else
+        git clone --depth 1 "$repo_url" "$repo_dir" || return 1
     fi
-    rm -rf "$ART_DIR/$repo/.git"
-
-
 }
 
 
@@ -208,6 +243,25 @@ function get_value() {
     else
         echo "$ini_value"
     fi
+}
+
+
+
+function check_file() {
+    local file="$1"
+    local remote_file
+
+    if [[ "$file" =~ ^http[s]:// ]]; then
+        remote_file="$file"
+        file="$(dirname "$infotxt")/$(basename "$remote_file")"
+        if ! [[ -f "$file" ]]; then
+            dialogInfo "Downloading \"$file\".\n\nPlease wait..."
+            curl "$remote_file" -o "$file" || return $?
+        fi
+    fi
+
+    [[ -f "$file" ]] || return $?
+    echo "$file"
 }
 
 
@@ -239,8 +293,6 @@ function show_image() {
         || return $?
     fi
 }
-
-
 
 
 # end of other functions ####################################################
