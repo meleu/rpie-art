@@ -1,4 +1,4 @@
 system = "snes"
 game_name = "Legend of Zelda - A Link to the Past"
-launching_image = "~/RetroPie/splashscreens/retropie-extra/rookervik-earthworm.png"
+launching_image = "$HOME/RetroPie/splashscreens/retropie-extra/rookervik-earthworm.png"
 

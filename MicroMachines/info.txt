@@ -1,4 +1,4 @@
 system = "nes"
 game_name = "Micro Machines"
-launching_image = "~/RetroPie/splashscreens/retropie-extra/lilbud-micromachines.jpg"
+launching_image = "$HOME/RetroPie/splashscreens/retropie-extra/lilbud-micromachines.jpg"
 
