@@ -31,6 +31,14 @@ function dialogMenu() {
 
 
 
+function dialogChecklist() {
+    local text="$1"
+    shift
+    dialog --no-mouse --ok-label "Continue" --backtitle "$BACKTITLE" --checklist "$text\n\nCheck the options you want and press \"Continue\"." 17 75 10 "$@" 2>&1 > /dev/tty
+}
+
+
+
 function dialogInput() {
     local text="$1"
     shift
@@ -103,7 +111,6 @@ function repo_menu() {
         dialogYesNo "You don't have the files from \"$repo_url\".\n\nDo you want to get them now?\n(it may take a few minutes)" \
         || return 1
 # TODO: give a better feedback about what's going on (check dialog --gauge)
-        dialogInfo "Getting files from \"$repo_url\".\n\nPlease wait..."
         if ! get_repo_art "$repo_url" "$repo_dir"; then
             dialogMsg "ERROR: failed to download (git clone) files from $repo_url\n\nPlease check your connection and try again."
             return 1
@@ -124,7 +131,7 @@ function repo_menu() {
         choice=$( "${cmd[@]}" "${options[@]}" )
 
         case "$choice" in
-            U)  update_repo ;;
+            U)  get_repo_art ;;
             D)  delete_local_repo ;;
             O)  art_menu overlay ;;
             L)  art_menu launching ;;
@@ -157,7 +164,17 @@ function art_menu() {
         tmp="$(grep -l "^$art_type" "$infotxt")"
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
         [[ "$tmp" == "." ]] && continue
-        options+=( $((i++)) "$tmp")
+
+        # do not show _generic options for non-installed systems
+        iniGet game_name "$infotxt"
+        if [[ "$ini_value" == "_generic" ]]; then
+            iniGet system "$infotxt"
+            [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
+        fi
+
+#        options+=( $((i++)) "$tmp")
+# trying with --checklist
+        options+=( $((i++)) "$tmp" off )
     done < <(find "$repo_dir" -type f -name info.txt | sort)
 
     if [[ ${#options[@]} -eq 0 ]]; then
@@ -166,8 +183,12 @@ function art_menu() {
     fi
 
     while true; do
-        choice=$(dialogMenu "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
+# TODO: use dialog --checklist instead of --menu.
+#        choice=$(dialogMenu "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
+#        || break
+        choice=$(dialogChecklist "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
         || break
+# TODO: RECOMEÇAR AQUI tratar as múltiplas escolhas em $choice (por causa do --checklist)
         infotxt="$ART_DIR/$repo/${options[2*choice-1]}/info.txt"
 
         case "$art_type" in
@@ -181,12 +202,18 @@ function art_menu() {
 
 
 function install_launching_menu() {
+    echo "TODO!"
+}
+
+
+
+function install_launching_menu() {
     local system="$(get_value system "$infotxt")"
     local game_name="$(get_value game_name "$infotxt")"
     local launching_image="$(get_value launching_image "$infotxt")"
     local sys game image
     local destination_dir="$ROMS_DIR"
-    [[ "$game_name" == "_generic" ]] && destination_dir="$CONFIG_DIR/"
+    local extension
     local options=()
     local choice
     local i=1
@@ -203,16 +230,34 @@ function install_launching_menu() {
     while true; do
         choice=$(dialogMenu "Launching image list for ${game_name}." "${options[@]}") \
         || return
-        image="${images[$choice]}"
 
-        image="$(check_file "$image")"
+        image="$(check_file "${images[$choice]}")"
         if [[ -z "$image" ]]; then
             dialogMsg "We had some problem with the file \"$image\"!\n\nUpdate files form remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
-            return 1
+            continue
         fi
 
+        # TODO: add a preview option
         show_image "$image"
-        # TODO: RECOMEÇAR AQUI
+
+        if [[ "$game_name" == "_generic" ]]; then
+            destination_dir="$CONFIG_DIR/$system"
+
+            extension="${image##*.}"
+            case "$extension" in
+                jpg)    rm -f "$DESTINATION_DIR/$SYSTEM/launching.png" ;;
+                png)    rm -f "$DESTINATION_DIR/$SYSTEM/launching.jpg" ;;
+                *)      dialogMsg "Invalid file extension for \"$image\"."; continue ;;
+            esac
+
+            if ! cp -i "$image" "$destination_dir/launching.$extension"; then
+                dialogMsg "Failed to install the file \"$image\" in \"$destination_dir\"."
+                continue
+            fi
+        fi
+
+        # TODO: instalar launching image para um jogo específico
+
     done
 }
 
@@ -223,6 +268,7 @@ function install_launching_menu() {
 # other functions ###########################################################
 
 function get_repo_art() {
+    dialogInfo "Getting files from \"$repo_url\".\n\nPlease wait..."
     if [[ -d "$repo_dir/.git" ]]; then
         cd "$repo_dir"
         git fetch --prune
