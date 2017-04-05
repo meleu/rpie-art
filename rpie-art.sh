@@ -11,6 +11,7 @@ fi
 
 scriptdir="$(dirname "$0")"
 scriptdir="$(cd "$scriptdir" && pwd)"
+readonly CURLCMD=$([[ "$(uname)" == CYGWIN* ]] && echo 'curl --proxy-ntlm' || echo curl)
 readonly REPO_FILE="$scriptdir/repositories.txt"
 readonly SCRIPT_REPO="$(head -1 "$scriptdir/repositories.txt" | cut -d' ' -f1)"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
@@ -89,6 +90,7 @@ function main_menu() {
         case "$choice" in 
 # TODO: decidir se vou utilizar esse método de update ou criar um scriptmodule
             U)      update_repo "$repo_rpie_art" ;;
+            # TODO: por enquanto só aceita 10 repositórios (de 0 a 9)
             [0-9])  repo_menu "${options[3*choice+1]}" ;;
             *)      break ;;
         esac
@@ -156,12 +158,12 @@ function art_menu() {
     local options=()
     local choice
 
-    dialogInfo "Getting $art_type art info for \"$repo\" repository."
+    dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
 
     iniConfig '=' '"'
 
     while IFS= read -r infotxt; do
-        tmp="$(grep -l "^$art_type" "$infotxt")"
+        tmp="$(grep -l "^$art_type" "$infotxt")" || continue
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
         [[ "$tmp" == "." ]] && continue
 
@@ -188,21 +190,17 @@ function art_menu() {
 #        || break
         choice=$(dialogChecklist "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
         || break
-# TODO: RECOMEÇAR AQUI tratar as múltiplas escolhas em $choice (por causa do --checklist)
-        infotxt="$ART_DIR/$repo/${options[2*choice-1]}/info.txt"
 
-        case "$art_type" in
-            overlay)    install_overlay_menu ;;
-            launching)  install_launching_menu ;;
-            scrape)     install_scrape_menu ;;
-        esac
+        for i in $choice; do
+            infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
+
+            case "$art_type" in
+                overlay)    install_overlay_menu ;;
+                launching)  install_launching_menu ;;
+                scrape)     install_scrape_menu ;;
+            esac
+        done
     done
-}
-
-
-
-function install_launching_menu() {
-    echo "TODO!"
 }
 
 
@@ -228,6 +226,7 @@ function install_launching_menu() {
     IFS="$oldIFS"
     
     while true; do
+# TODO: se houver apenas uma imagem, não há necessidade de mostrar o dialog abaixo
         choice=$(dialogMenu "Launching image list for ${game_name}." "${options[@]}") \
         || return
 
@@ -238,25 +237,40 @@ function install_launching_menu() {
         fi
 
         # TODO: add a preview option
-        show_image "$image"
+#        show_image "$image"
 
         if [[ "$game_name" == "_generic" ]]; then
             destination_dir="$CONFIG_DIR/$system"
 
             extension="${image##*.}"
             case "$extension" in
-                jpg)    rm -f "$DESTINATION_DIR/$SYSTEM/launching.png" ;;
-                png)    rm -f "$DESTINATION_DIR/$SYSTEM/launching.jpg" ;;
+                jpg)    rm -f "$destination_dir/$system/launching.png" ;;
+                png)    rm -f "$destination_dir/$system/launching.jpg" ;;
                 *)      dialogMsg "Invalid file extension for \"$image\"."; continue ;;
             esac
 
             if ! cp -i "$image" "$destination_dir/launching.$extension"; then
                 dialogMsg "Failed to install the file \"$image\" in \"$destination_dir\"."
-                continue
             fi
+            continue
         fi
 
         # TODO: instalar launching image para um jogo específico
+# exact match with rom_config from info.txt (without the trailing .cfg).
+# try to find something using the game_name from info.txt.
+# try to find something in gamelist.xml using the game_name from info.txt.
+        local rom_path
+        local rom_dir
+        local rom_file
+        local i=1
+        local options=()
+        while IFS= read -r rom_path; do
+            rom_file=$(basename "$rom_path")
+            rom_dir=$(dirname "$rom_path")
+            options+=( $((i++)) "$rom_file" off)
+        done < <(find "$ROMS_DIR/$system" -type f -iname "${game_name// /*}*.*" | sort)
+        choice=$(dialogChecklist "ROM list to install $art_type art \"$(basename $image)\"." "${options[@]}") \
+        || break
 
     done
 }
@@ -297,12 +311,14 @@ function check_file() {
     local file="$1"
     local remote_file
 
+# TODO: checar extensÃ£o?
     if [[ "$file" =~ ^http[s]:// ]]; then
         remote_file="$file"
         file="$(dirname "$infotxt")/$(basename "$remote_file")"
         if ! [[ -f "$file" ]]; then
             dialogInfo "Downloading \"$file\".\n\nPlease wait..."
-            curl "$remote_file" -o "$file" || return $?
+# DEBUG
+            $CURLCMD "$remote_file" -o "$file" || return $?
         fi
     fi
 
