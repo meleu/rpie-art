@@ -88,10 +88,8 @@ function main_menu() {
         choice=$( "${cmd[@]}" "${options[@]}" 2>&1 > /dev/tty )
 
         case "$choice" in 
-# TODO: decidir se vou utilizar esse método de update ou criar um scriptmodule
-            U)      update_repo "$repo_rpie_art" ;;
-            # TODO: por enquanto só aceita 10 repositórios (de 0 a 9)
-            [0-9])  repo_menu "${options[3*choice+1]}" ;;
+            U)      update_script ;;
+            [0-9]*) repo_menu "${options[3*choice+1]}" ;;
             *)      break ;;
         esac
     done
@@ -146,7 +144,7 @@ function repo_menu() {
 
 
 function art_menu() {
-    if ! [[ "$1" =~ ^(overlay|launching|scrape) ]]; then
+    if ! [[ "$1" =~ ^(overlay|launching|scrape)$ ]]; then
         echo "ERROR: art_menu(): invalid art type \"$1\"."
         exit 1
     fi
@@ -174,8 +172,6 @@ function art_menu() {
             [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
         fi
 
-#        options+=( $((i++)) "$tmp")
-# trying with --checklist
         options+=( $((i++)) "$tmp" off )
     done < <(find "$repo_dir" -type f -name info.txt | sort)
 
@@ -185,12 +181,8 @@ function art_menu() {
     fi
 
     while true; do
-# TODO: use dialog --checklist instead of --menu.
-#        choice=$(dialogMenu "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
-#        || break
         choice=$(dialogChecklist "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
         || break
-
         for i in $choice; do
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
 
@@ -226,11 +218,11 @@ function install_launching_menu() {
     IFS="$oldIFS"
     
     while true; do
-# TODO: se houver apenas uma imagem, não há necessidade de mostrar o dialog abaixo
+# TODO: se houver apenas uma imagem, nao ha necessidade de mostrar o dialog abaixo
         choice=$(dialogMenu "Launching image list for ${game_name}." "${options[@]}") \
         || return
 
-        image="$(check_file "${images[$choice]}")"
+        image="$(check_image_file "${images[$choice]}")"
         if [[ -z "$image" ]]; then
             dialogMsg "We had some problem with the file \"$image\"!\n\nUpdate files form remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
             continue
@@ -255,23 +247,8 @@ function install_launching_menu() {
             continue
         fi
 
-        # TODO: instalar launching image para um jogo específico
-# exact match with rom_config from info.txt (without the trailing .cfg).
-# try to find something using the game_name from info.txt.
-# try to find something in gamelist.xml using the game_name from info.txt.
-        local rom_path
-        local rom_dir
-        local rom_file
-        local i=1
-        local options=()
-        while IFS= read -r rom_path; do
-            rom_file=$(basename "$rom_path")
-            rom_dir=$(dirname "$rom_path")
-            options+=( $((i++)) "$rom_file" off)
-        done < <(find "$ROMS_DIR/$system" -type f -iname "${game_name// /*}*.*" | sort)
-        choice=$(dialogChecklist "ROM list to install $art_type art \"$(basename $image)\"." "${options[@]}") \
-        || break
-
+        # TODO: instalar launching image para um jogo especÃ­fico
+        get_rom_name
     done
 }
 
@@ -280,6 +257,26 @@ function install_launching_menu() {
 
 
 # other functions ###########################################################
+
+function update_script() {
+    local fail_flag=0
+
+    dialogInfo "Fetching latest version of the script.\n\nPlease wait..."
+    cd "$scriptdir"
+    local branch=$(git branch | sed '/^\* /!d; s/^\* //')
+    git fetch --prune || fail_flag=1
+    git reset --hard origin/"$branch" > /dev/null || fail_flag=1
+    git clean -f -d || fail_flag=1
+
+    if [[ $fail_flag -ne 0 ]]; then
+        dialogMsg "Failed to fetch latest version of the script.\n\nCheck your connection and try again."
+        return 1
+    fi
+
+    exec "$scriptdir/$(basename "$0")"
+}
+
+
 
 function get_repo_art() {
     dialogInfo "Getting files from \"$repo_url\".\n\nPlease wait..."
@@ -307,23 +304,44 @@ function get_value() {
 
 
 
-function check_file() {
+function check_image_file() {
     local file="$1"
     local remote_file
 
-# TODO: checar extensÃ£o?
     if [[ "$file" =~ ^http[s]:// ]]; then
         remote_file="$file"
         file="$(dirname "$infotxt")/$(basename "$remote_file")"
         if ! [[ -f "$file" ]]; then
             dialogInfo "Downloading \"$file\".\n\nPlease wait..."
-# DEBUG
             $CURLCMD "$remote_file" -o "$file" || return $?
         fi
     fi
 
+    # checking the extension
+    [[ "$file" =~ \.(jpg|png)$ ]] || return 1
+
     [[ -f "$file" ]] || return $?
     echo "$file"
+}
+
+
+
+function get_rom_name() {
+# exact match with rom_config from info.txt (without the trailing .cfg).
+# try to find something using the game_name from info.txt.
+# try to find something in gamelist.xml using the game_name from info.txt.
+        local rom_path
+        local rom_dir
+        local rom_file
+        local i=1
+        local options=()
+        while IFS= read -r rom_path; do
+            rom_file=$(basename "$rom_path")
+            rom_dir=$(dirname "$rom_path")
+            options+=( $((i++)) "$rom_file" off)
+        done < <(find "$ROMS_DIR/$system" -type f -iname "${game_name// /*}*.*" | sort)
+        choice=$(dialogChecklist "ROM list to install $art_type art \"$(basename "$image")\"." "${options[@]}") \
+        || break
 }
 
 
