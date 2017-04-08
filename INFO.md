@@ -46,6 +46,10 @@ The image filename to use as runcommand launching art. If there are more than on
 launching_image = "RomName_1-launching.png; RomName_2-launching.png"
 ```
 
+The `launching_image` can also be an URL (http/https only) pointing to an image from the web. **Example**:
+
+```launching_image = "https://raw.githubusercontent.com/HerbFargus/retropie-splashscreens-extra/master/megaman.jpg"```
+
 
 ## `scrape_image`: OPTIONAL
 
@@ -55,6 +59,10 @@ The image filename to use as emulationstation art. If there are more than one op
 ```
 scrape_image = "RomName_1-image.png; RomName_2-image.png"
 ```
+
+The `scrape_image` can also be an URL (http/https only) pointing to an image from the web. **Example**:
+
+```scrape_image = "https://raw.githubusercontent.com/UDb23/rpie-ovl/master/arcade/Lunar%20Rescue/lrescue-image.png"```
 
 ## `rom_config`: OPTIONAL (REQUIRED for overlays)
 
@@ -87,6 +95,7 @@ The overlay image filename itself. If there are more than one image option, sepa
 ```
 overlay_image = "RomName_artist_1-ovl.cfg; RomName_artist_2-ovl.cfg"
 ```
+
 
 ## `rom_clones`: OPTIONAL (used for arcade game overlays only)
 
