@@ -393,7 +393,9 @@ function install_overlay() {
     # TODO: deal with clones
 
     # TODO: deal with rom names peculiarities
-    if [[ "$system" == "arcade" ]]; then
+    if [[ "$game_name" == "_generic" ]]; then
+        rom_config_dest_file="$CONFIG_DIR/$system/retroarch.cfg"
+    elif [[ "$system" == "arcade" ]]; then
         rom_config_dest_file="$rom_dir/$(basename "$rom_config")"
     else
         rom_config_dest_file="$(get_rom_name)" || return 1
