@@ -22,7 +22,7 @@ scriptdir="$(cd "$scriptdir" && pwd)"
 readonly REPO_FILE="$scriptdir/repositories.txt"
 readonly SCRIPT_REPO="$(head -1 "$scriptdir/repositories.txt" | cut -d' ' -f1)"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
-readonly ART_DIR="$HOME/RetroPie/art"
+readonly ART_DIR="$HOME/RetroPie/art-repos"
 readonly ROMS_DIR="$HOME/RetroPie/roms"
 readonly CONFIG_DIR="/opt/retropie/configs"
 readonly ARCADE_ROMS_DIR=( $(ls -df1 "$HOME/RetroPie/roms"/{mame-libretro,arcade,fba,neogeo}) )
@@ -163,19 +163,22 @@ function games_art_menu() {
 
     local art_type="$1"
     local infotxt
+    local infodir
     local i=1
     local tmp
     local options=()
     local choice
 
+    # TODO: use dialog --gauge
     dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
 
     iniConfig ' = ' '"'
 
     while IFS= read -r infotxt; do
+        grep -q "^game_name" "$infotxt" || continue
+        grep -q "^system" "$infotxt" || continue
         tmp="$(grep -l "^$art_type" "$infotxt")" || continue
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
-        [[ "$tmp" == "." ]] && continue
 
         # do not show _generic options for non-installed systems
         iniGet game_name "$infotxt"
@@ -203,6 +206,7 @@ function games_art_menu() {
 
         for i in $choice; do
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
+            infodir="$(dirname "$infotxt")"
             install_menu || dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
         done
     done
@@ -251,8 +255,8 @@ function install_menu() {
         done
     fi
 
-    if [[ -z "$image" ]]; then
-        dialogMsg "We had some problem with the file \"$image\"!\n\nUpdate files from remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
+    if ! [[ -f "$image" ]]; then
+        dialogMsg "We've had some problem with the file \"$(basename "$image")\"!\n\nUpdate files from remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
         return 1
     fi
 
@@ -334,8 +338,8 @@ function check_image_file() {
     # checking the extension
     [[ "$file" =~ \.(jpg|png)$ ]] || return 1
 
-    [[ -f "$file" ]] || return $?
     echo "$file"
+    [[ -f "$file" ]]
 }
 
 
@@ -344,12 +348,16 @@ function install_overlay() {
 # TODO: deal with clones
     local dir="$(dirname "$infotxt")"
     local rom_config="$dir/$(get_value rom_config "$infotxt")"
+    local rom_config_dest
     local overlay_config="$dir/$(get_value overlay_config "$infotxt")"
     local rom_dir
     local overlay_dir
+    local key
+    local value
 
     [[ -f "$rom_config" && -f "$overlay_config" ]] || return 1
 
+    # TODO: this logic should be in install_menu() function
     if [[ "$system" == "arcade" ]]; then
         if [[ -z "$arcade_rom_dir_choice" ]]; then
             local options=()
@@ -361,7 +369,7 @@ function install_overlay() {
                 options+=( "$((i++))" "$opt" )
             done
 
-            choice=$(dialogMenu "Select the directory to install the overlay for \"$game_name\"." "${options[@]}")
+            choice=$(dialogMenu "Select the directory to install the arcade $art_type art." "${options[@]}")
             rom_dir="${options[2*choice-1]}"
             arcade_rom_dir_choice="$rom_dir"
         else
@@ -375,8 +383,15 @@ function install_overlay() {
         rom_dir="$ROMS_DIR/$system"
     fi
 
+    dialogInfo "Installing $art_type art for \"$game_name\"..."
+
     # TODO: deal with rom names peculiarities
-    cp "$rom_config" "$rom_dir"
+
+    rom_config_dest="$rom_dir/$(basename "$rom_config")"
+    while IFS=' = ' read -r key value; do
+        iniSet "$key" "$value" "$rom_config_dest"
+    done < <(egrep -v '^[[:space:]]*#|^[[:space:]]*$' "$rom_config")
+    #cp "$rom_config" "$rom_dir"
 
     iniGet input_overlay "$rom_config"
     cp "$overlay_config" "$ini_value"
