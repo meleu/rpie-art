@@ -168,6 +168,8 @@ function games_art_menu() {
     local tmp
     local options=()
     local choice
+    local install_success_list
+    local game
 
     # TODO: use dialog --gauge
     dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
@@ -180,12 +182,9 @@ function games_art_menu() {
         tmp="$(grep -l "^$art_type" "$infotxt")" || continue
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
 
-        # do not show _generic options for non-installed systems
-        iniGet game_name "$infotxt"
-        if [[ "$ini_value" == "_generic" ]]; then
-            iniGet system "$infotxt"
-            [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
-        fi
+        # do not show options for non-installed systems
+        iniGet system "$infotxt"
+        [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
 
         options+=( $((i++)) "$tmp" off )
     done < <(find "$repo_dir" -type f -name info.txt | sort)
@@ -207,13 +206,14 @@ function games_art_menu() {
         for i in $choice; do
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
             infodir="$(dirname "$infotxt")"
+            game=$(basename "$infodir")
             if install_menu; then
-                # TODO: store the successfully installed art game names
-                echo SUCCESS
+                install_success_list+="$game\n"
             else
                 dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
             fi
         done
+        dialogMsg "Successfully installed $art_type art for:\n\n$install_success_list"
         arcade_roms_dir_choice=""
     done
 }
@@ -224,8 +224,9 @@ function install_menu() {
     local system="$(get_value system "$infotxt")"
     local game_name="$(get_value game_name "$infotxt")"
     local art_image="$(get_value ${art_type}_image "$infotxt")"
+    local rom_dir
     local image
-    local i=1
+    local i
     local opt_images=()
     local options=()
     local choice
@@ -233,6 +234,32 @@ function install_menu() {
     local destination_dir
     local extension
 
+    # logic to choose the arcade roms directory
+    if [[ "$system" == "arcade" ]]; then
+        if [[ -n "$arcade_roms_dir_choice" ]]; then
+            rom_dir="$arcade_roms_dir_choice"
+        else
+            local opt
+
+            i=1
+            for opt in "${ARCADE_ROMS_DIR[@]}"; do
+                options+=( "$((i++))" "$opt" )
+            done
+
+            while true; do
+                choice=$(dialogMenu "Select the directory to install the arcade $art_type art." "${options[@]}") \
+                || return 1
+                break
+            done
+            rom_dir="${options[2*choice-1]}"
+            arcade_roms_dir_choice="$rom_dir"
+        fi
+    else
+        rom_dir="$ROMS_DIR/$system"
+    fi
+
+    # logic to choose when we have more than one image option
+    i=1
     oldIFS="$IFS"
     IFS=';'
     for image in $art_image; do
@@ -351,53 +378,32 @@ function check_image_file() {
 
 
 function install_overlay() {
-# TODO: deal with clones
     local dir="$(dirname "$infotxt")"
     local rom_config="$dir/$(get_value rom_config "$infotxt")"
-    local rom_config_dest
+    local rom_config_dest_file
     local overlay_config="$dir/$(get_value overlay_config "$infotxt")"
-    local rom_dir
     local overlay_dir
     local key
-    local value
+    local junk
 
     [[ -f "$rom_config" && -f "$overlay_config" ]] || return 1
 
-    # TODO: this logic should be in install_menu() function
-    if [[ "$system" == "arcade" ]]; then
-        if [[ -z "$arcade_roms_dir_choice" ]]; then
-            local options=()
-            local opt
-            local choice
-            local i=1
-
-            for opt in "${ARCADE_ROMS_DIR[@]}"; do
-                options+=( "$((i++))" "$opt" )
-            done
-
-            choice=$(dialogMenu "Select the directory to install the arcade $art_type art." "${options[@]}")
-            rom_dir="${options[2*choice-1]}"
-            arcade_roms_dir_choice="$rom_dir"
-        else
-            rom_dir="$arcade_roms_dir_choice"
-        fi
-    else
-# TODO: delete this!
-        dialogMsg "NOT IMPLEMENTED YET!\n\nSorry... :("
-        return
-
-        rom_dir="$ROMS_DIR/$system"
-    fi
-
     dialogInfo "Installing $art_type art for \"$game_name\"..."
 
-    # TODO: deal with rom names peculiarities
+    # TODO: deal with clones
 
-    rom_config_dest="$rom_dir/$(basename "$rom_config")"
-    while IFS=' = ' read -r key value; do
-        iniSet "$key" "$value" "$rom_config_dest"
+    # TODO: deal with rom names peculiarities
+    if [[ "$system" == "arcade" ]]; then
+        rom_config_dest_file="$rom_dir/$(basename "$rom_config")"
+    else
+        rom_config_dest_file="$(get_rom_name)" || return 1
+        rom_config_dest_file="$rom_dir/${rom_config_dest_file}.cfg"
+    fi
+
+    while read -r key junk; do
+        iniGet "$key" "$rom_config"
+        iniSet "$key" "$ini_value" "$rom_config_dest_file"
     done < <(egrep -v '^[[:space:]]*#|^[[:space:]]*$' "$rom_config")
-    #cp "$rom_config" "$rom_dir"
 
     iniGet input_overlay "$rom_config"
     cp "$overlay_config" "$ini_value"
@@ -415,26 +421,32 @@ function install_overlay() {
 
 
 function get_rom_name() {
-# TODO: work on this function!
-# exact match with rom_config from info.txt (without the trailing .cfg).
-# try to find something using the game_name from info.txt.
-# try to find something in gamelist.xml using the game_name from info.txt.
+    # XXX: should I make it return more than one ROM?
+    # methods:
+    # exact match with rom_config from info.txt (without the trailing .cfg).
+    # try to find something using the game_name from info.txt.
+    # try to find something in gamelist.xml using the game_name from info.txt.
         local rom_path
-        local rom_dir
         local rom_file
         local i=1
         local options=()
-        local choice=()
+        local choice
 
         while IFS= read -r rom_path; do
-            rom_file=$(basename "$rom_path")
-            rom_dir=$(dirname "$rom_path")
-            options+=( $((i++)) "$rom_file" off)
-        done < <(find "$ROMS_DIR/$system" -type f -iname "${game_name// /*}*.*" | sort)
-        choice=$(dialogChecklist "ROM list to install $art_type art \"$(basename "$image")\"." "${options[@]}") \
-        || break
+            rom_file="$rom_path"
+            rom_file="${rom_file/#$rom_dir\//}"
+            options+=( $((i++)) "$rom_file")
+        done < <(find "$rom_dir" -type f ! -name '*.cfg' -iname "${game_name// /*}*.*" | sort)
 
-        echo "${choice[@]}"
+        if [[ -z "$options" ]]; then
+            dialogMsg "ROM for \"$game_name\" not found! :("
+            return 1
+        fi
+
+        choice=$(dialogMenu "ROM list to install the $art_type art file \"$(basename "$image")\"." "${options[@]}") \
+        || return 1
+
+        echo "${options[2*choice-1]}"
 }
 
 
