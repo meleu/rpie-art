@@ -26,7 +26,7 @@ readonly ART_DIR="$HOME/RetroPie/art-repos"
 readonly ROMS_DIR="$HOME/RetroPie/roms"
 readonly CONFIG_DIR="/opt/retropie/configs"
 readonly ARCADE_ROMS_DIR=( $(ls -df1 "$HOME/RetroPie/roms"/{mame-libretro,arcade,fba,neogeo}) )
-arcade_rom_dir_choice=""
+arcade_roms_dir_choice=""
 
 # dialog functions ##########################################################
 
@@ -207,8 +207,14 @@ function games_art_menu() {
         for i in $choice; do
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
             infodir="$(dirname "$infotxt")"
-            install_menu || dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
+            if install_menu; then
+                # TODO: store the successfully installed art game names
+                echo SUCCESS
+            else
+                dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
+            fi
         done
+        arcade_roms_dir_choice=""
     done
 }
 
@@ -220,7 +226,6 @@ function install_menu() {
     local art_image="$(get_value ${art_type}_image "$infotxt")"
     local image
     local i=1
-#    declare -Ag opt_images
     local opt_images=()
     local options=()
     local choice
@@ -231,7 +236,8 @@ function install_menu() {
     oldIFS="$IFS"
     IFS=';'
     for image in $art_image; do
-        opt_images+=( "$(echo "$image" | sed 's/^ *//')" )
+        # the sed below deletes spaces in the beggining and the end of line
+        opt_images+=( "$(echo "$image" | sed 's/\(^[[:space:]]*\|[[:space:]]*$\)//g')" )
         options+=( $i "$(basename "${opt_images[i-1]}")" )
         ((i++))
     done
@@ -359,7 +365,7 @@ function install_overlay() {
 
     # TODO: this logic should be in install_menu() function
     if [[ "$system" == "arcade" ]]; then
-        if [[ -z "$arcade_rom_dir_choice" ]]; then
+        if [[ -z "$arcade_roms_dir_choice" ]]; then
             local options=()
             local opt
             local choice
@@ -371,9 +377,9 @@ function install_overlay() {
 
             choice=$(dialogMenu "Select the directory to install the arcade $art_type art." "${options[@]}")
             rom_dir="${options[2*choice-1]}"
-            arcade_rom_dir_choice="$rom_dir"
+            arcade_roms_dir_choice="$rom_dir"
         else
-            rom_dir="$arcade_rom_dir_choice"
+            rom_dir="$arcade_roms_dir_choice"
         fi
     else
 # TODO: delete this!
