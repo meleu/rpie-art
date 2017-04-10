@@ -3,7 +3,6 @@
 #
 # TODO:
 # - check info.txt integrity (invalid characters: ';')
-# - deal with multiple systems
 # - deal with clones
 # - add error messages (e.g.: no overlay_image entry in info.txt)
 
@@ -128,7 +127,7 @@ function repo_menu() {
         U "Update files from remote repository"
         D "Delete local repository files"
         O "Overlay list"
-        L "Launching image list (NOT IMPLEMENTED)"
+        L "Launching image list"
         S "Scraped image list (NOT IMPLEMENTED)"
     )
     local choice
@@ -156,7 +155,7 @@ function games_art_menu() {
     fi
 
 # TODO: REMOVE THIS
-    if [[ "$1" =~ ^(launching|scrape)$ ]]; then
+    if [[ "$1" =~ ^scrape$ ]]; then
         dialogMsg "NOT IMPLEMENTED YET!\n\nSorry... :("
         return
     fi
@@ -177,12 +176,15 @@ function games_art_menu() {
     iniConfig ' = ' '"'
 
     while IFS= read -r infotxt; do
+        # ignoring files that:
+        # - has no game_name
+        # - has no system
+        # - has no desired art_type
+        # - system is not installed
         grep -q "^game_name" "$infotxt" || continue
         grep -q "^system" "$infotxt" || continue
         tmp="$(grep -l "^$art_type" "$infotxt")" || continue
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
-
-        # do not show options for non-installed systems
         iniGet system "$infotxt"
         [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
 
@@ -230,9 +232,6 @@ function install_menu() {
     local opt_images=()
     local options=()
     local choice
-
-    local destination_dir
-    local extension
 
     # logic to choose the arcade roms directory
     if [[ "$system" == "arcade" ]]; then
@@ -392,7 +391,6 @@ function install_overlay() {
 
     # TODO: deal with clones
 
-    # TODO: deal with rom names peculiarities
     if [[ "$game_name" == "_generic" ]]; then
         rom_config_dest_file="$CONFIG_DIR/$system/retroarch.cfg"
     elif [[ "$system" == "arcade" ]]; then
@@ -418,6 +416,32 @@ function install_overlay() {
 
     iniSet overlay0_overlay "$(basename "$image")" "$overlay_config"
     return 0
+}
+
+
+
+function install_launching() {
+    local extension="${image##*.}"
+    local dest_file
+
+    if [[ "$game_name" == "_generic" ]]; then
+        dest_file="$CONFIG_DIR/$system/launching.$extension"
+    else
+        dest_file="$(get_rom_name)" || return 1
+        dest_file="$(basename "$dest_file")"
+        dest_file="${dest_file%.*}"
+        dest_file="$ROMS_DIR/$system/images/${dest_file}-launching.$extension"
+    fi
+
+    case "$extension" in
+        jpg)    rm -f "${dest_file%.*}.png" ;;
+        png)    rm -f "${dest_file%.*}.jpg" ;;
+        *)      dialogMsg "Invalid file extension for \"$image\"."; return 1 ;;
+    esac
+
+    mkdir -p "$(dirname "$dest_file")"
+    cp "$image" "$dest_file"
+    return $?
 }
 
 
