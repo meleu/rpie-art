@@ -4,7 +4,7 @@
 # TODO:
 # - check info.txt integrity (invalid characters: ';')
 # - deal with clones
-# - add error messages (e.g.: no overlay_image entry in info.txt)
+# - better feedback to the user about the errors.
 
 
 if ! source /opt/retropie/lib/inifuncs.sh ; then
@@ -21,7 +21,7 @@ scriptdir="$(cd "$scriptdir" && pwd)"
 readonly REPO_FILE="$scriptdir/repositories.txt"
 readonly SCRIPT_REPO="$(head -1 "$scriptdir/repositories.txt" | cut -d' ' -f1)"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
-readonly ART_DIR="$HOME/RetroPie/art-repos"
+readonly ART_DIR="$HOME/RetroPie/art-repositories"
 readonly ROMS_DIR="$HOME/RetroPie/roms"
 readonly CONFIG_DIR="/opt/retropie/configs"
 readonly ARCADE_ROMS_DIR=( $(ls -df1 "$HOME/RetroPie/roms"/{mame-libretro,arcade,fba,neogeo}) )
@@ -216,6 +216,7 @@ function games_art_menu() {
             fi
         done
         dialogMsg "Successfully installed $art_type art for:\n\n$install_success_list"
+        install_success_list=""
         arcade_roms_dir_choice=""
     done
 }
@@ -447,32 +448,31 @@ function install_launching() {
 
 
 function get_rom_name() {
-    # XXX: should I make it return more than one ROM?
     # methods:
     # exact match with rom_config from info.txt (without the trailing .cfg).
-    # try to find something using the game_name from info.txt.
+    # [DONE] try to find some file using the game_name from info.txt.
     # try to find something in gamelist.xml using the game_name from info.txt.
-        local rom_path
-        local rom_file
-        local i=1
-        local options=()
-        local choice
+    local rom_path
+    local rom_file
+    local i=1
+    local options=()
+    local choice
 
-        while IFS= read -r rom_path; do
-            rom_file="$rom_path"
-            rom_file="${rom_file/#$rom_dir\//}"
-            options+=( $((i++)) "$rom_file")
-        done < <(find "$rom_dir" -type f ! -name '*.cfg' -iname "${game_name// /*}*.*" | sort)
+    while IFS= read -r rom_path; do
+        rom_file="$rom_path"
+        rom_file="${rom_file/#$rom_dir\//}"
+        options+=( $((i++)) "$rom_file")
+    done < <(find "$rom_dir" -type f ! -name '*.cfg' -iname "${game_name// /*}*.*" | sort)
 
-        if [[ -z "$options" ]]; then
-            dialogMsg "ROM for \"$game_name\" not found! :("
-            return 1
-        fi
+    if [[ -z "$options" ]]; then
+        dialogMsg "ROM for \"$game_name\" not found! :("
+        return 1
+    fi
 
-        choice=$(dialogMenu "ROM list to install the $art_type art file \"$(basename "$image")\"." "${options[@]}") \
-        || return 1
+    choice=$(dialogMenu "ROM list to install the $art_type art file \"$(basename "$image")\"." "${options[@]}") \
+    || return 1
 
-        echo "${options[2*choice-1]}"
+    echo "${options[2*choice-1]}"
 }
 
 
