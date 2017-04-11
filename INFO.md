@@ -9,6 +9,20 @@ The `info.txt` format is:
 key = "value"
 ```
 
+## Straight for an example
+
+Maybe an example can explain things pretty straightforward. A detailed explanation of each entry is given below.
+```
+game_name = "Burning Force"
+system = "arcade"
+rom_config = "burnforc.zip.cfg"
+overlay_config = "burnforc.cfg"
+overlay_image = "burnforc_udb-ovl.png"
+rom_clones = "burnforco"
+launching_image = "burnforc-launching.png"
+scrape_image = "burnforc-image.png"
+```
+
 Below we have a description of every valid `info.txt` entry.
 
 ## `game_name`: REQUIRED
@@ -97,7 +111,7 @@ overlay_image = "RomName_artist_1-ovl.cfg; RomName_artist_2-ovl.cfg"
 ```
 
 
-## `rom_clones`: OPTIONAL (used for arcade game overlays only)
+## `rom_clones`: OPTIONAL (usually used for arcade game overlays)
 
 List of clones that can use the same overlay as the parent ROM separeted with a semicolon (don't use the trailing `.zip`).
 
