@@ -66,6 +66,16 @@ Use the same name as the RetroPie uses (those directories at `$HOME/RetroPie/rom
 system = "nes"
 ```
 
+## `creator`: OPTIONAL
+
+The artist that made the overlay image.
+
+**Example:**
+```
+creator = "Meleu"
+```
+
+
 ## `launching_image`: OPTIONAL
 
 The image filename to use as runcommand launching art. If there are more than one image option, separate them with semicolon and the script will let the user choose one.
@@ -98,17 +108,26 @@ The `scrape_image` can also be an URL (http/https only) pointing to an image fro
 The ROM config file name that stays in the same directory as the ROM.
 
 - **RULE:** If it's an arcade game overlay, it's pretty simple: `ROM.zip.cfg`
-- **GUIDELINE:** If it's a system generic overlay use `system.cfg`. Examples: `nes.cfg`, `gba.cfg`, `neogeo.cfg`.
+- **GUIDELINE:** If it's a system generic overlay use `system.cfg`. Examples: Cnes.cfg`, `gba.cfg`, `neogeo.cfg`.
+   Generic overlays should be placed in subfolder named `_GENERIC` under the specific console folder.
 - **GUIDELINE:** If it's a console game overlay, use `GameName.cfg`. But since there's no rule for console ROM file names, the script will try to find some ROMs based on the `game_name` entry and show the options to let the user choose (the script looks at the respective system's gamelist.xml and the actual file system).
 
 **Example:**
 ```
 rom_config = "RomFileName.cfg"
 ```
+If you are providing multiple different overlays (e.g. sidebars only and Integer scale) create a subfolder for each overlay, called Option_X
+**Example:**
+```
+rom_config_1 = "Option 1/burnforc.zip.cfg"
+overlay_config_1 = "Option 1/burnforc.cfg"
+overlay_image_1 = "Option 1/burnforc_udb-ovl.png"
+```
 
 ## `overlay_config`: OPTIONAL (REQUIRED for overlays)
 
 The overlay config file name.
+In case of Generic overlays config file (lines to be added to corresponding retroarch.cfg) should be named `consolename-LR.cfg`
 
 **Example:**
 ```
