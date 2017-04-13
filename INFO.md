@@ -13,13 +13,28 @@ key = "value"
 
 Maybe an example can explain things pretty straightforward. A detailed explanation of each entry is given below.
 ```
+# game_name: REQUIRED
 game_name = "Burning Force"
+
+# system: REQUIRED
 system = "arcade"
+
+# rom_config: OPTIONAL (REQUIRED for overlays)
 rom_config = "burnforc.zip.cfg"
+
+# overlay_config: OPTIONAL (REQUIRED for overlays)
 overlay_config = "burnforc.cfg"
+
+# overlay_image: OPTIONAL (REQUIRED for overlays)
 overlay_image = "burnforc_udb-ovl.png"
+
+# rom_clones: OPTIONAL
 rom_clones = "burnforco"
+
+# launching_image: OPTIONAL (REQUIRED for launching images)
 launching_image = "burnforc-launching.png"
+
+# scrape_image: OPTIONAL (REQUIRED for scrape images)
 scrape_image = "burnforc-image.png"
 ```
 
