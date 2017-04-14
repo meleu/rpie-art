@@ -9,7 +9,7 @@ The `info.txt` format is:
 key = "value"
 ```
 
-## Straight for an example
+## Straight to an example
 
 Maybe an example can explain things pretty straightforward. A detailed explanation of each entry is given below.
 ```
