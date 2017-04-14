@@ -19,6 +19,9 @@ game_name = "Burning Force"
 # system: REQUIRED
 system = "arcade"
 
+# creator: OPTIONAL
+creator = "UDb23"
+
 # rom_config: OPTIONAL (REQUIRED for overlays)
 rom_config = "burnforc.zip.cfg"
 
@@ -66,6 +69,16 @@ Use the same name as the RetroPie uses (those directories at `$HOME/RetroPie/rom
 system = "nes"
 ```
 
+## `creator`: OPTIONAL
+
+The artist that made the overlay image.
+
+**Example:**
+```
+creator = "meleu"
+```
+
+
 ## `launching_image`: OPTIONAL
 
 The image filename to use as runcommand launching art. If there are more than one image option, separate them with semicolon and the script will let the user choose one.
@@ -99,6 +112,7 @@ The ROM config file name that stays in the same directory as the ROM.
 
 - **RULE:** If it's an arcade game overlay, it's pretty simple: `ROM.zip.cfg`
 - **GUIDELINE:** If it's a system generic overlay use `system.cfg`. Examples: `nes.cfg`, `gba.cfg`, `neogeo.cfg`.
+   Generic overlays should be placed in subfolder named `_GENERIC` under the specific console folder.
 - **GUIDELINE:** If it's a console game overlay, use `GameName.cfg`. But since there's no rule for console ROM file names, the script will try to find some ROMs based on the `game_name` entry and show the options to let the user choose (the script looks at the respective system's gamelist.xml and the actual file system).
 
 **Example:**
