@@ -123,7 +123,6 @@ rom_config = "RomFileName.cfg"
 ## `overlay_config`: OPTIONAL (REQUIRED for overlays)
 
 The overlay config file name.
-In case of Generic overlays config file (lines to be added to corresponding retroarch.cfg) should be named `consolename-LR.cfg`
 
 **Example:**
 ```
