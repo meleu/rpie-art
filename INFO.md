@@ -71,7 +71,7 @@ system = "nes"
 
 ## `creator`: OPTIONAL
 
-The artist that made the overlay image.
+The artist that made the art.
 
 **Example:**
 ```
