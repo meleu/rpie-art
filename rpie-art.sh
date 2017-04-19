@@ -215,7 +215,11 @@ function games_art_menu() {
                 dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
             fi
         done
-        dialogMsg "Successfully installed $art_type art for:\n\n$install_success_list"
+        if [[ -z "$install_success_list" ]]; then
+            dialogMsg "No art have been installed."
+        else
+            dialogMsg "Successfully installed $art_type art for:\n\n$install_success_list"
+        fi
         install_success_list=""
         arcade_roms_dir_choice=""
     done
