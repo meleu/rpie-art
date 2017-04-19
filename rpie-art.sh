@@ -466,7 +466,7 @@ function get_rom_name() {
         rom_file="$rom_path"
         rom_file="${rom_file/#$rom_dir\//}"
         options+=( $((i++)) "$rom_file")
-    done < <(find "$rom_dir" -type f ! -name '*.cfg' -iname "${game_name// /*}*.*" | sort)
+    done < <(find "$rom_dir" -type f ! -iname '*.cfg' ! -iname '*.png' ! -iname '*.jpg' -iname "${game_name// /*}*.*" | sort)
 
     if [[ -z "$options" ]]; then
         dialogMsg "ROM for \"$game_name\" not found! :("
