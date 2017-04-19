@@ -89,11 +89,14 @@ function main_menu() {
         options+=( $((i++)) "$url" "$description" )
     done < "$REPO_FILE"
 
+    options+=( X "Uninstall art" "List games in your system with art installed and give a chance to uninstall art" )
+
     while true; do
         choice=$( "${cmd[@]}" "${options[@]}" 2>&1 > /dev/tty )
 
         case "$choice" in 
             U)      update_script ;;
+            X)      uninstall_art_menu ;;
             [0-9]*) repo_menu "${options[3*choice+1]}" ;;
             *)      break ;;
         esac
@@ -122,19 +125,21 @@ function repo_menu() {
         fi
     fi
 
-    local cmd=( dialogMenu "Options for $repo_url repository." )
+    local cmd=( dialog --no-mouse --backtitle "$BACKTITLE" 
+        --title " $repo Menu " --cancel-label "Exit" --item-help
+        --menu "Options for $repo_url repository." 17 75 10 
+    )
     local options=(
-        U "Update files from remote repository"
-        D "Delete local repository files"
-        O "Overlay list"
-        L "Launching image list"
-        S "Scraped image list (NOT IMPLEMENTED)"
+        U "Update files from remote repository" "Download new files from the repository, if it has any."
+        D "Delete local repository files"       "Useful if storage space is a problem."
+        O "Overlay list"                        "List of games with overlay art to install."
+        L "Launching image list"                "List of games with launching art to install."
+        S "Scraped image list (NOT IMPLEMENTED)" "List of games with scrape art to install."
     )
     local choice
 
     while true; do
-        choice=$( "${cmd[@]}" "${options[@]}" )
-
+        choice=$( "${cmd[@]}" "${options[@]}" 2>&1 > /dev/tty )
         case "$choice" in
             U)  get_repo_art ;;
             D)  delete_local_repo ;;
@@ -172,8 +177,6 @@ function games_art_menu() {
 
     # TODO: use dialog --gauge
     dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
-
-    iniConfig ' = ' '"'
 
     while IFS= read -r infotxt; do
         # ignoring files that:
@@ -298,6 +301,103 @@ function install_menu() {
     fi
 
     eval install_$art_type || return $?
+}
+
+
+
+function uninstall_art_menu() {
+    #TODO: uninstall scraped image?
+    local options=(
+        O "List of games with overlay art installed."
+        L "List of games with launching art installed."
+    )
+    local choice
+    choice=$( dialogMenu "What kind of art do you want to uninstall?" "${options[@]}" ) \
+    || return 1
+
+    case "$choice" in
+        O) uninstall_overlay_menu ;;
+        L) uninstall_launching_menu ;;
+        *) return ;;
+    esac
+}
+
+
+
+function uninstall_overlay_menu() {
+    local options=()
+    local i=1
+    local choice
+    local rom_config
+    local ovl_config
+    local ovl_image
+    local fail
+
+    while true; do
+        i=1
+        options=()
+        while IFS= read -r rom_config; do
+            # TODO: check if there's a better name in gamelist.xml
+            options+=( $((i++)) "${rom_config/#$ROMS_DIR\//}" )
+        done < <(find "$ROMS_DIR" -type f -iname '*.cfg' -print0 | xargs -0 grep -l '^input_overlay' | sort)
+
+        choice=$( dialogMenu "Select the game config file you want to uninstall overlay art from." "${options[@]}" ) \
+        || break
+    
+        rom_config="$ROMS_DIR/${options[2*choice-1]}"
+        rom_name=$(basename "$rom_config")
+        rom_name="${rom_name%.cfg}"
+    
+        iniGet "input_overlay" "$rom_config"
+        ovl_config="$ini_value"
+        iniGet "overlay0_overlay" "$ovl_config"
+        ovl_image="$ini_value"
+    
+        dialogYesNo "Are you sure you want to uninstall overlay art for \"$rom_name\" ROM file?" \
+        || continue
+    
+        rm -f "$(dirname "$ovl_config")/$ovl_image" || fail=1
+        rm -f "$ovl_config" || fail=1
+    
+        while read -r key; do
+            iniUnset "$key" "" "$rom_config"
+        done < <(grep -o '^input_overlay[^ ]*' "$rom_config")
+    
+        if [[ "$fail" == "1" ]]; then
+            dialogMsg "We had some problem to uninstall overlay art for \"$rom_name\" ROM file."
+        else
+            dialogMsg "Overlay art for \"$rom_name\" ROM file has been uninstalled."
+        fi
+    done
+}
+
+
+
+function uninstall_launching_menu() {
+    local image
+    local options=()
+    local choice
+    local i=1
+
+    while true; do
+        i=1
+        options=()
+        while IFS= read -r image; do
+            options+=( $((i++)) "${image/#$ROMS_DIR\//}" )
+        done < <(find "$ROMS_DIR" -type f -iname '*-launching.???' | sort)
+
+        choice=$( dialogMenu "Select the launching image you want to delete." "${options[@]}" ) \
+        || break
+
+        image="$ROMS_DIR/${options[2*choice-1]}"
+
+        dialogYesNo "Are you sure you want to delete \"$image\" file?" \
+        || continue
+
+        rm -f "$image" || dialogMsg "Failed to delete \"$image\" file."
+
+        dialogMsg "The \"$image\" file has been deleted."
+    done
 }
 
 # end of menu functions #####################################################
@@ -521,6 +621,8 @@ if ! [[ -d "$(dirname "$ART_DIR")" ]]; then
 fi
 
 mkdir -p "$ART_DIR"
+
+iniConfig ' = ' '"'
 
 main_menu
 echo
