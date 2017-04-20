@@ -11,7 +11,7 @@ key = "value"
 
 ## Straight to an example
 
-Maybe an example can explain things pretty straightforward. A detailed explanation of each entry is given below.
+Maybe an example can explain things pretty straightforward.
 ```
 # game_name: REQUIRED
 game_name = "Burning Force"
@@ -41,7 +41,7 @@ launching_image = "burnforc-launching.png"
 scrape_image = "burnforc-image.png"
 ```
 
-Below we have a description of every valid `info.txt` entry.
+Below we have a detailed description of every valid `info.txt` entry.
 
 ## `game_name`: REQUIRED
 
