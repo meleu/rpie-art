@@ -267,6 +267,7 @@ function install_menu() {
 
     # logic to choose when we have more than one image option
     i=1
+    options=()
     oldIFS="$IFS"
     IFS=';'
     for image in $art_image; do
