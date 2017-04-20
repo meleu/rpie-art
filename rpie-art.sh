@@ -19,7 +19,6 @@ scriptdir="$(dirname "$0")"
 scriptdir="$(cd "$scriptdir" && pwd)"
 
 readonly REPO_FILE="$scriptdir/repositories.txt"
-readonly SCRIPT_REPO="$(head -1 "$scriptdir/repositories.txt" | cut -d' ' -f1)"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
 readonly ART_DIR="$HOME/RetroPie/art-repositories"
 readonly ROMS_DIR="$HOME/RetroPie/roms"
