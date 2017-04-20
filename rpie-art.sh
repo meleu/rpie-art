@@ -302,7 +302,7 @@ function install_menu() {
     fi
 
     if ! [[ -f "$image" ]]; then
-        dialogMsg "We've had some problem with the file \"$(basename "$image")\"!\n\nUpdate files from remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
+        dialogMsg "WARNING!\n\nWe've had some problem with $art_type art for \"$game_name ($system)\"!\n\nUpdate files from remote repository and try again. If the problem persists, report it at \"$repo_url/issues\"."
         return 1
     fi
 
