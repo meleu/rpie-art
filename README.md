@@ -1,7 +1,7 @@
 # rpie-art
 Easy way to install art on your RetroPie.
 
-The `rpie-art.sh` is a script that let you easily install [overlays](https://github.com/libretro/RetroArch/wiki/Overlay-image-configuration), [launching images](https://github.com/retropie/retropie-setup/wiki/runcommand#adding-custom-launching-images) and [scrape images](https://github.com/RetroPie/RetroPie-Setup/wiki/Scraper) in your RetroPie.
+The `rpie-art.sh` is a script that let you easily install [overlays](https://github.com/libretro/RetroArch/wiki/Overlay-image-configuration), [launching images](https://github.com/retropie/retropie-setup/wiki/runcommand#adding-custom-launching-images) and [scrape images](https://github.com/RetroPie/RetroPie-Setup/wiki/Scraper) (not yet implemented) in your RetroPie.
 
 The art files come from other github repositories maintained by other users. You can see the art repository list in the [`repositories.txt` file](https://github.com/meleu/rpie-art/blob/master/repositories.txt).
 
