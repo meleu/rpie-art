@@ -126,7 +126,7 @@ function repo_menu() {
     fi
 
     local cmd=( dialog --no-mouse --backtitle "$BACKTITLE" 
-        --title " $repo Menu " --cancel-label "Exit" --item-help
+        --title " $repo Menu " --cancel-label "Back" --item-help
         --menu "Options for $repo_url repository." 17 75 10 
     )
     local options=(
