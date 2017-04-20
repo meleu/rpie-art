@@ -174,6 +174,7 @@ function games_art_menu() {
     local install_success_list
     local install_fail_list
     local game
+    local creator
 
     # TODO: use dialog --gauge
     dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
@@ -212,8 +213,10 @@ function games_art_menu() {
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
             infodir="$(dirname "$infotxt")"
             game=$(basename "$infodir")
+            creator="$(get_value creator "$infotxt")"
+            creator="${creator:+(creator: $creator)}"
             if install_menu; then
-                install_success_list+="$game\n"
+                install_success_list+="$game $creator\n"
             else
                 install_fail_list+="$game\n"
             fi
