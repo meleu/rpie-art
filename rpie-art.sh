@@ -124,9 +124,9 @@ function repo_menu() {
         fi
     fi
 
-    local cmd=( dialog --no-mouse --backtitle "$BACKTITLE" 
-        --title " $repo Menu " --cancel-label "Back" --item-help
-        --menu "Options for $repo_url repository." 17 75 10 
+    local cmd=( dialog --no-mouse --backtitle "$BACKTITLE" --title " $repo Menu "
+        --cancel-label "Back" --item-help --menu "Options for $repo_url repository."
+        17 75 10 
     )
     local options=(
         U "Update files from remote repository" "Download new files from the repository, if it has any."
@@ -172,6 +172,7 @@ function games_art_menu() {
     local options=()
     local choice
     local install_success_list
+    local install_fail_list
     local game
 
     # TODO: use dialog --gauge
@@ -214,15 +215,17 @@ function games_art_menu() {
             if install_menu; then
                 install_success_list+="$game\n"
             else
-                dialogMsg "$art_type art for \"${options[3*i-2]}\" was NOT installed!"
+                install_fail_list+="$game\n"
             fi
         done
         if [[ -z "$install_success_list" ]]; then
             dialogMsg "No art have been installed."
         else
             dialogMsg "Successfully installed $art_type art for:\n\n$install_success_list"
+            [[ -n "$install_fail_list" ]] && dialogMsg "The $art_type art was NOT installed for:\n\n$install_fail_list"
         fi
         install_success_list=""
+        install_fail_list=""
         arcade_roms_dir_choice=""
     done
 }
