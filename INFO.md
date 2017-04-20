@@ -9,6 +9,14 @@ The `info.txt` format is:
 key = "value"
 ```
 
+**Please use a descriptive name for your art directory**, preferably the name of the game. Subdirectories are allowed. Here are some good examples of directory names: 
+- `Contra/`
+- `nes/Felix The Cat`
+- `Cadillacs and Dinosaurs`
+- `arcade/Marvel vs. Capcom - Clash of Super Heroes`
+- `megadrive/Gunstar Heroes`
+- `snes/The Legend of Zelda - A Link to the Past`
+
 ## Straight to examples
 
 Maybe some examples can explain things pretty straightforward.
