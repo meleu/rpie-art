@@ -562,12 +562,15 @@ function get_rom_name() {
     local i=1
     local options=()
     local choice
+    local rom_pattern
+    rom_pattern="${game_name//[Tt]he /}"
+    rom_pattern="${rom_pattern// /*}*.*"
 
     while IFS= read -r rom_path; do
         rom_file="$rom_path"
         rom_file="${rom_file/#$rom_dir\//}"
         options+=( $((i++)) "$rom_file")
-    done < <(find "$rom_dir" -type f ! -iname '*.cfg' ! -iname '*.png' ! -iname '*.jpg' -iname "${game_name// /*}*.*" | sort)
+    done < <(find "$rom_dir" -type f ! -iname '*.cfg' ! -iname '*.png' ! -iname '*.jpg' -iname "$rom_pattern" | sort)
 
     if [[ -z "$options" ]]; then
         dialogMsg "ROM for \"$game_name\" not found! :("
