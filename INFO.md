@@ -13,7 +13,7 @@ key = "value"
 
 Maybe some examples can explain things pretty straightforward.
 
-**Example 1: launching image only**
+### Example 1: launching image only
 
 This file can be named, for example, `nes/Contra/info.txt`:
 
@@ -25,7 +25,7 @@ launching_image = "lilbud-contra.jpg"
 
 The `lilbud-contra.jpg` file must be in the same directory (in this example the directory is `nes/Contra/`).
 
-**Example 2: overlay only**
+### Example 2: overlay only
 
 This file can be named, for example, `arcade/Pac-Man/info.txt`:
 
@@ -39,7 +39,7 @@ overlay_image = "pacman_udb-ovl.png"
 
 All the files (`pacman.zip.cfg`, `pacman.cfg` and `pacman_udb-ovl.png`) must be in the same directory (in this example the directory is `arcade/Pac-Man/`).
 
-**Example 3: two options for overlay images**
+### Example 3: two options for overlay images
 
 This file can be named, for example, `arcade/Marvel vs. Capcom- Clash of Super Heroes/info.txt`:
 
@@ -52,7 +52,7 @@ overlay_image = "mvsc_udb_1-ovl.png; mvsc_udb_2-ovl.png"
 ```
 The image file names must be separated by a semicolon.
 
-**Example 4: complete art set for a game**
+### Example 4: complete art set for a game
 
 This file can be named, for example, `arcade/Burning Force/info.txt`:
 
