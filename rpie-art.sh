@@ -503,14 +503,11 @@ function install_overlay() {
     local rom_config_dest_file
     local overlay_config="$dir/$(get_value overlay_config "$infotxt")"
     local overlay_dir
-    local key
-    local junk
+    local clone
 
     [[ -f "$rom_config" && -f "$overlay_config" ]] || return 1
 
     dialogInfo "Installing $art_type art for \"$game_name\"..."
-
-    # TODO: deal with clones
 
     if [[ "$game_name" == "_generic" ]]; then
         rom_config_dest_file="$CONFIG_DIR/$system/retroarch.cfg"
@@ -521,10 +518,24 @@ function install_overlay() {
         rom_config_dest_file="$rom_dir/${rom_config_dest_file}.cfg"
     fi
 
-    while read -r key junk; do
-        iniGet "$key" "$rom_config"
-        iniSet "$key" "$ini_value" "$rom_config_dest_file"
-    done < <(egrep -v '^[[:space:]]*#|^[[:space:]]*$' "$rom_config")
+    set_config_file "$rom_config" "$rom_config_dest_file"
+
+    # dealing with arcade clones
+    if [[ "$system" == "arcade" ]]; then
+        oldIFS="$IFS"
+        IFS=';'
+        for clone in $(get_value rom_clones "$infotxt"); do
+            IFS="$oldIFS"
+            # the sed below deletes spaces in the beggining and the end of line
+            clone="$(echo "$clone" | sed 's/\(^[[:space:]]*\|[[:space:]]*$\)//g')"
+            clone="$(dirname "$rom_config_dest_file")/${clone}.zip"
+            if [[ -f "$clone" ]]; then
+                set_config_file "$rom_config" "${clone}.cfg"
+            fi
+            IFS=';'
+        done
+        IFS="$oldIFS"
+    fi
 
     iniGet input_overlay "$rom_config"
     cp "$overlay_config" "$ini_value"
@@ -537,6 +548,20 @@ function install_overlay() {
 
     iniSet overlay0_overlay "$(basename "$image")" "$overlay_config"
     return 0
+}
+
+
+
+function set_config_file() {
+    local key
+    local junk
+    local orig_file="$1"
+    local dest_file="$2"
+
+    while read -r key junk; do
+        iniGet "$key" "$orig_file"
+        iniSet "$key" "$ini_value" "$dest_file"
+    done < <(egrep -v '^[[:space:]]*#|^[[:space:]]*$' "$orig_file")
 }
 
 
