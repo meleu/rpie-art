@@ -38,8 +38,15 @@ function dialogMenu() {
 
 function dialogChecklist() {
     local text="$1"
+    local choice
     shift
-    dialog --no-mouse --ok-label "Continue" --backtitle "$BACKTITLE" --checklist "$text\n\nCheck the options you want and press \"Continue\"." 17 75 10 "$@" 2>&1 > /dev/tty
+    while true; do
+        choice=$(dialog --no-mouse --ok-label "Continue" --backtitle "$BACKTITLE" --checklist "$text\n\nCheck the options you want and press \"Continue\"." 17 75 10 "$@" 2>&1 > /dev/tty) \
+        || return $?
+        [[ -n "$choice" ]] && break
+        dialogMsg "You didn't choose any option. Please select at least one or cancel."
+    done
+    echo "$choice"
 }
 
 
@@ -176,8 +183,7 @@ function games_art_menu() {
     local game
     local creator
 
-    # TODO: use dialog --gauge
-    dialogInfo "Getting $art_type art info for \"$repo\" repository.\n\nPlease wait..."
+    dialogInfo "Parsing info.txt files from \"$repo\" repository.\n\nPlease wait..."
 
     while IFS= read -r infotxt; do
         # ignoring files that:
@@ -203,11 +209,6 @@ function games_art_menu() {
     while true; do
         choice=$(dialogChecklist "Games with $art_type art from \"$repo\" repository." "${options[@]}") \
         || break
-
-        if [[ -z "$choice" ]]; then
-            dialogMsg "You didn't choose any game. Please select at least one or cancel."
-            continue
-        fi
 
         for i in $choice; do
             infotxt="$ART_DIR/$repo/${options[3*i-2]}/info.txt"
@@ -501,6 +502,7 @@ function install_overlay() {
     local dir="$(dirname "$infotxt")"
     local rom_config="$dir/$(get_value rom_config "$infotxt")"
     local rom_config_dest_file
+    local rom_config_dest_dir
     local overlay_config="$dir/$(get_value overlay_config "$infotxt")"
     local overlay_dir
     local clone
@@ -517,25 +519,9 @@ function install_overlay() {
         rom_config_dest_file="$(get_rom_name)" || return 1
         rom_config_dest_file="$rom_dir/${rom_config_dest_file}.cfg"
     fi
+    rom_config_dest_dir="$(dirname "$rom_config_dest_file")"
 
     set_config_file "$rom_config" "$rom_config_dest_file"
-
-    # dealing with arcade clones
-    if [[ "$system" == "arcade" ]]; then
-        oldIFS="$IFS"
-        IFS=';'
-        for clone in $(get_value rom_clones "$infotxt"); do
-            IFS="$oldIFS"
-            # the sed below deletes spaces in the beggining and the end of line
-            clone="$(echo "$clone" | sed 's/\(^[[:space:]]*\|[[:space:]]*$\)//g')"
-            clone="$(dirname "$rom_config_dest_file")/${clone}.zip"
-            if [[ -f "$clone" ]]; then
-                set_config_file "$rom_config" "${clone}.cfg"
-            fi
-            IFS=';'
-        done
-        IFS="$oldIFS"
-    fi
 
     iniGet input_overlay "$rom_config"
     cp "$overlay_config" "$ini_value"
@@ -547,6 +533,36 @@ function install_overlay() {
     cp "$image" "$overlay_dir"
 
     iniSet overlay0_overlay "$(basename "$image")" "$overlay_config"
+
+    # dealing with arcade clones
+    if [[ "$system" == "arcade" ]]; then
+        oldIFS="$IFS"
+        IFS=';'
+        i=1
+        options=()
+        for clone in $(get_value rom_clones "$infotxt"); do
+            IFS="$oldIFS"
+            # the sed below deletes spaces in the beggining and the end of line
+            clone="$(echo "$clone" | sed 's/\(^[[:space:]]*\|[[:space:]]*$\)//g')"
+            if [[ -f "$rom_config_dest_dir/${clone}.zip" ]]; then
+                options+=( $((i++)) "$clone" off)
+            fi
+            IFS=';'
+        done
+        IFS="$oldIFS"
+
+        if [[ ${#options[@]} -gt 0 ]]; then
+            choice=$(dialogChecklist "You have clone(s) for \"$game_name\". Check the clones you want to install the overlay." "${options[@]}") \
+            || break
+
+            for i in $choice; do
+                clone="${options[3*i-2]}"
+                dialogInfo "Installing $art_type art for \"$clone\"..."
+                set_config_file "$rom_config" "$rom_config_dest_dir/${clone}.zip.cfg"
+            done
+        fi
+    fi
+
     return 0
 }
 
