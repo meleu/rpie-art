@@ -3,7 +3,6 @@
 #
 # TODO:
 # - check info.txt integrity (invalid characters: ';')
-# - deal with clones
 # - better feedback to the user about the errors.
 
 
