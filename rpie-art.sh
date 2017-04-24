@@ -369,7 +369,7 @@ function uninstall_overlay_menu() {
     
         # do NOT delete ovl files if they are being used by]
         # another rom config (maybe a clone).
-        find "$ROMS_DIR" -type f -iname '*.cfg' -print0 | xargs -0 grep -lq "^input_overlay .*$ovl_config" \
+        find "$ROMS_DIR" -type f -iname '*.cfg' ! -path "$rom_config" -print0 | xargs -0 grep -lq "^input_overlay .*$ovl_config" \
         && delete_ovl_files=0
 
         if [[ "$delete_ovl_files" == "1" ]]; then
@@ -382,6 +382,9 @@ function uninstall_overlay_menu() {
         done < <(grep -o '^input_overlay[^ ]*' "$rom_config")
         # XXX: not sure if iniDel video_scale_integer is the best approach.
         iniDel "video_scale_integer" "$rom_config"
+
+        # the user can have custom configs in $rom_config file, if not, delete it
+        [[ -s "$rom_config" ]] || rm -f "$rom_config"
     
         if [[ "$fail" == "1" ]]; then
             dialogMsg "We had some problem to uninstall overlay art for \"$rom_name\" ROM file."
