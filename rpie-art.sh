@@ -195,7 +195,7 @@ function games_art_menu() {
         tmp="$(grep -l "^$art_type" "$infotxt")" || continue
         tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
         iniGet system "$infotxt"
-        [[ -d "$CONFIG_DIR/$ini_value" ]] || continue
+        [[ "$ini_value" != "arcade" && ! -d "$CONFIG_DIR/$ini_value" ]] && continue
 
         options+=( $((i++)) "$tmp" off )
     done < <(find "$repo_dir" -type f -name info.txt | sort)
