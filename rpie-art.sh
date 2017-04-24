@@ -186,17 +186,21 @@ function games_art_menu() {
 
     while IFS= read -r infotxt; do
         # ignoring files that:
+
         # - has no game_name
-        # - has no system
-        # - has no desired art_type
-        # - system is not installed
         grep -q "^game_name" "$infotxt" || continue
-        grep -q "^system" "$infotxt" || continue
-        tmp="$(grep -l "^$art_type" "$infotxt")" || continue
-        tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
+
+        # - has no system
         iniGet system "$infotxt"
+        [[ -z "$ini_value" ]] && continue
+
+        # - system is not installed
         [[ "$ini_value" != "arcade" && ! -d "$CONFIG_DIR/$ini_value" ]] && continue
 
+        # - has no desired art_type
+        tmp="$(grep -l "^$art_type" "$infotxt")" || continue
+
+        tmp="$(dirname "${tmp/#$ART_DIR\/$repo\//}")"
         options+=( $((i++)) "$tmp" off )
     done < <(find "$repo_dir" -type f -name info.txt | sort)
 
@@ -512,7 +516,7 @@ function install_overlay() {
 
     if [[ "$game_name" == "_generic" ]]; then
         rom_config_dest_file="$CONFIG_DIR/$system/retroarch.cfg"
-    elif [[ "$system" == "arcade" ]]; then
+    elif [[ "${ARCADE_ROMS_DIR[@]}" =~ "$rom_dir" ]]; then
         rom_config_dest_file="$rom_dir/$(basename "$rom_config")"
     else
         rom_config_dest_file="$(get_rom_name)" || return 1
