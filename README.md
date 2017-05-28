@@ -43,6 +43,12 @@ You need to know the configurations needed to make the overlay work. There's a [
 
 After creating your github repository, adding some art files and filling some `info.txt` files, you can add your repo to the `rpie-art.sh` script by adding the repo URL and a description in the [`repositories.txt` file](repositories.txt) and submitting a Pull Request (if you don't know how to do it just contact me in the [issue tracker](issues)).
 
+## Donate
+
+If you would like to buy me a beer and say thanks, click the button below.
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZZ3ZN4T7D65EY)
+
 ## A brief history of this tool
 
 - We, RetroPie enthusiasts, started the [MAME ROW](https://retropie.org.uk/forum/topic/9011/mame-row-rules-and-list-of-rounds) where we choose a random arcade game to play every week.
