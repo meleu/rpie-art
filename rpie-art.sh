@@ -14,15 +14,21 @@ fi
 # TODO: delete this after development
 readonly CURLCMD=$([[ "$(uname)" == CYGWIN* ]] && echo 'curl --proxy-ntlm' || echo curl)
 
-scriptdir="$(dirname "$0")"
-scriptdir="$(cd "$scriptdir" && pwd)"
-
-readonly REPO_FILE="$scriptdir/repositories.txt"
-readonly BACKTITLE="rpie-art: installing art on your RetroPie."
-readonly ART_DIR="$HOME/RetroPie/art-repositories"
-readonly ROMS_DIR="$HOME/RetroPie/roms"
+readonly RP_DIR="$HOME/RetroPie"
+readonly ART_DIR="$RP_DIR/art-repositories"
+readonly ROMS_DIR="$RP_DIR/roms"
 readonly CONFIG_DIR="/opt/retropie/configs"
-readonly ARCADE_ROMS_DIR=( $(ls -df1 "$HOME/RetroPie/roms"/{mame-libretro,arcade,fba,neogeo}) )
+readonly ARCADE_ROMS_DIR=( $(ls -df1 "$RP_DIR/roms"/{mame-libretro,arcade,fba,neogeo}) )
+SCRIPT_DIR="$(dirname "$0")"
+SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
+readonly SCRIPT_NAME="$(basename "$0")"
+readonly SCRIPT_FULL="$SCRIPT_DIR/$SCRIPT_NAME"
+readonly SCRIPT_URL="https://raw.githubusercontent.com/meleu/rpie-art/master/rpie-art.sh"
+readonly SCRIPT_INSTALLED="$RP_DIR/retropiemenu/rpie-art.sh"
+readonly REPOS_URL="https://raw.githubusercontent.com/meleu/rpie-art/master/rpie-art-repositories.txt"
+readonly REPOS_FILE="$SCRIPT_DIR/repositories.txt"
+readonly REPOS_INSTALLED="$RP_DIR/retropiemenu/rpie-art-repositories.txt"
+readonly BACKTITLE="rpie-art: installing art on your RetroPie."
 arcade_roms_dir_choice=""
 
 # dialog functions ##########################################################
@@ -92,7 +98,7 @@ function main_menu() {
 
     while read -r url description; do
         options+=( $((i++)) "$url" "$description" )
-    done < "$REPO_FILE"
+    done < "$REPOS_FILE"
 
     options+=( X "Uninstall art" "List games in your system with art installed and give a chance to uninstall art" )
 
@@ -429,26 +435,29 @@ function uninstall_launching_menu() {
 # other functions ###########################################################
 
 function update_script() {
-    dialogYesNo "Do you want to update the \"$(basename $0)\" script?" \
+    local err_flag=0
+    local err_msg
+
+    dialogYesNo "Are you sure you want to download the latest version of \"$SCRIPT_NAME\" script?" \
     || return 1
 
-    local fail_flag=0
+    err_msg=$(curl "$SCRIPT_URL" -o "/tmp/$SCRIPT_NAME" 2>&1) \
+    && err_msg=$(mv "/tmp/$SCRIPT_NAME" "$SCRIPT_DIR/$SCRIPT_NAME" 2>&1) \
+    && err_msg=$(chmod a+x "$SCRIPT_DIR/$SCRIPT_NAME" 2>&1) \
+    && err_msg=$(curl "$REPOS_URL" -o "/tmp/repos.tmp" 2>&1) \
+    && err_msg=$(mv "/tmp/repos.tmp" "$REPOS_FILE" 2>&1) \
+    || err_flag=1
 
-    dialogInfo "Fetching latest version of the script.\n\nPlease wait..."
-    cd "$scriptdir"
-    local branch=$(git branch | sed '/^\* /!d; s/^\* //')
-    git fetch --prune || fail_flag=1
-    git reset --hard origin/"$branch" > /dev/null || fail_flag=1
-    git clean -f -d || fail_flag=1
-
-    if [[ $fail_flag -ne 0 ]]; then
-        dialogMsg "Failed to fetch latest version of the script.\n\nCheck your connection and try again."
+    if [[ $err_flag -ne 0 ]]; then
+        err_msg=$(echo "$err_msg" | tail -1)
+        dialogMsg "Failed to update \"$SCRIPT_NAME\".\n\nError message:\n$err_msg"
         return 1
     fi
 
-    exec "$scriptdir/$(basename "$0")"
+    dialogMsg "SUCCESS!\n\nThe script was successfully updated.\n\nPress enter to run the latest version."
+    [[ -x "$SCRIPT_DIR/$SCRIPT_NAME" ]] && exec "$SCRIPT_DIR/$SCRIPT_NAME" --no-warning
+    return 1
 }
-
 
 
 function get_repo_art() {
@@ -676,6 +685,13 @@ function show_image() {
 }
 
 
+function install() {
+    cp "$SCRIPT_FULL" "$REPOS_FILE" "$RP_DIR/retropiemenu/" \
+    && chmod a+x "$SCRIPT_INSTALLED"
+    return $?
+}
+
+
 # end of other functions ####################################################
 
 
@@ -685,8 +701,17 @@ if ! [[ -d "$(dirname "$ART_DIR")" ]]; then
     echo "ERROR: $(dirname "$ART_DIR") not found." >&2
     exit 1
 fi
-
 mkdir -p "$ART_DIR"
+
+if [[ "$1" == "--install" ]]; then
+    if install; then
+        echo "SUCCESS: the \"$SCRIPT_NAME\" was successfully installed on RetroPie Menu."
+        exit 0
+    else
+        echo "FAIL: failed to install \"$SCRIPT_NAME\" on RetroPie Menu."
+        exit 1
+    fi
+fi
 
 iniConfig ' = ' '"'
 
