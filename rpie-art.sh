@@ -192,7 +192,6 @@ function games_art_menu() {
 
     while IFS= read -r infotxt; do
         # ignoring files that:
-
         # - has no game_name
         grep -q "^game_name" "$infotxt" || continue
 
@@ -629,29 +628,57 @@ function get_rom_name() {
     # [DONE] try to find some file using the game_name from info.txt.
     # try to find something in gamelist.xml using the game_name from info.txt.
     local rom_path
-    local rom_file
     local i=1
     local options=()
     local choice
     local rom_pattern
-    rom_pattern="${game_name//[Tt]he /}"
-    rom_pattern="${rom_pattern// /*}*.*"
+    local gamelist="$(get_gamelist_xml)"
 
-    while IFS= read -r rom_path; do
-        rom_file="$rom_path"
-        rom_file="${rom_file/#$rom_dir\//}"
-        options+=( $((i++)) "$rom_file")
-    done < <(find "$rom_dir" -type f -iname "$rom_pattern" ! -iname '*.srm' ! -iname '*.cfg' ! -iname '*.png' ! -iname '*.jpg' | sort)
+    if [[ -n "$gamelist" ]]; then
+        local xml_game_name
+
+        while read -r xml_game_name; do
+            rom_path="$(xmlstarlet sel -t -v "/gameList/game[name=\"$xml_game_name\"]/path" "$gamelist")"
+            rom_path="${rom_path/#.\//}"
+            options+=( $((i++)) "${rom_path/#$rom_dir\//}")
+        done < <(grep -i "<name>.*$game_name" "$gamelist" 2> /dev/null | sed 's|.*<name>\([^<]*\)</name>.*|\1|' | sort -u)
+    fi
 
     if [[ -z "$options" ]]; then
-        dialogMsg "ROM for \"$game_name\" not found! :("
-        return 1
+        rom_pattern="*${game_name//[Tt]he /}*.*"
+        while IFS= read -r rom_path; do
+            options+=( $((i++)) "${rom_path/#$rom_dir\//}")
+        done < <(find "$rom_dir" -type f -iname "$rom_pattern" ! -iname '*.srm' ! -iname '*.cfg' ! -iname '*.png' ! -iname '*.jpg' | sort)
+
+        if [[ -z "$options" ]]; then
+            dialogMsg "ROM for \"$game_name\" not found! :("
+            return 1
+        fi
     fi
 
     choice=$(dialogMenu "ROM list to install the $art_type art file \"$(basename "$image")\"." "${options[@]}") \
     || return 1
 
     echo "${options[2*choice-1]}"
+}
+
+
+
+function get_gamelist_xml() {
+    local gamelist="$HOME/RetroPie/roms/$system/gamelist.xml"
+    local gamelist_user="$HOME/.emulationstation/gamelists/$system/gamelist.xml"
+    local gamelist_global="/etc/emulationstation/gamelists/$system/gamelist.xml"
+
+    if [[ -s "$gamelist" ]]; then
+        echo "$gamelist"
+    elif [[ -s "$gamelist_user" ]]; then
+        echo "$gamelist_user"
+    elif [[ -s "$gamelist_global" ]]; then
+        echo "$gamelist_global"
+    else
+        return 1
+    fi
+    return 0
 }
 
 
