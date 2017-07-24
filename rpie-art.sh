@@ -411,13 +411,16 @@ function uninstall_launching_menu() {
         i=1
         options=()
         while IFS= read -r image; do
-            options+=( $((i++)) "${image/#$ROMS_DIR\//}" )
-        done < <(find "$ROMS_DIR" -type f -iname '*-launching.???' | sort)
+#            options+=( $((i++)) "${image/#$ROMS_DIR\//}" )
+            options+=( $((i++)) "$image" )
+        done < <(find "$ROMS_DIR" "$CONFIG_DIR" -type f \( -name '*launching.png' -o -name '*launching.jpg' \) | sort)
+
 
         choice=$( dialogMenu "Select the launching image you want to delete." "${options[@]}" ) \
         || break
 
-        image="$ROMS_DIR/${options[2*choice-1]}"
+#        image="$ROMS_DIR/${options[2*choice-1]}"
+        image="${options[2*choice-1]}"
 
         dialogYesNo "Are you sure you want to delete \"$image\" file?" \
         || continue
