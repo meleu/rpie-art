@@ -19,15 +19,13 @@ readonly ART_DIR="$RP_DIR/art-repositories"
 readonly ROMS_DIR="$RP_DIR/roms"
 readonly CONFIG_DIR="/opt/retropie/configs"
 readonly ARCADE_ROMS_DIR=( $(ls -df1 "$RP_DIR/roms"/{mame-libretro,arcade,fba,neogeo}) )
-SCRIPT_DIR="$(dirname "$0")"
-SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
+readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly SCRIPT_FULL="$SCRIPT_DIR/$SCRIPT_NAME"
 readonly SCRIPT_URL="https://raw.githubusercontent.com/meleu/rpie-art/master/rpie-art.sh"
 readonly SCRIPT_INSTALLED="$RP_DIR/retropiemenu/rpie-art.sh"
-readonly REPOS_URL="https://raw.githubusercontent.com/meleu/rpie-art/master/rpie-art-repositories.txt"
-readonly REPOS_FILE="$SCRIPT_DIR/rpie-art-repositories.txt"
-readonly REPOS_INSTALLED="$RP_DIR/retropiemenu/rpie-art-repositories.txt"
+readonly REPO_URL="https://raw.githubusercontent.com/meleu/rpie-art/master/rpie-art-repositories.txt"
+readonly REPO_FILE="$SCRIPT_DIR/rpie-art-repositories.txt"
 readonly BACKTITLE="rpie-art: installing art on your RetroPie."
 arcade_roms_dir_choice=""
 
@@ -98,7 +96,7 @@ function main_menu() {
 
     while read -r url description; do
         options+=( $((i++)) "$url" "$description" )
-    done < "$REPOS_FILE"
+    done < "$REPO_FILE"
 
     options+=( X "Uninstall art" "List games in your system with art installed and give a chance to uninstall art" )
 
@@ -171,7 +169,7 @@ function games_art_menu() {
     fi
 
 # TODO: REMOVE THIS
-    if [[ "$1" =~ ^scrape$ ]]; then
+    if [[ "$1" == scrape ]]; then
         dialogMsg "NOT IMPLEMENTED YET!\n\nSorry... :("
         return
     fi
@@ -444,10 +442,10 @@ function update_script() {
     || return 1
 
     err_msg=$(curl "$SCRIPT_URL" -o "/tmp/$SCRIPT_NAME" 2>&1) \
-    && err_msg=$(mv "/tmp/$SCRIPT_NAME" "$SCRIPT_DIR/$SCRIPT_NAME" 2>&1) \
-    && err_msg=$(chmod a+x "$SCRIPT_DIR/$SCRIPT_NAME" 2>&1) \
-    && err_msg=$(curl "$REPOS_URL" -o "/tmp/repos.tmp" 2>&1) \
-    && err_msg=$(mv "/tmp/repos.tmp" "$REPOS_FILE" 2>&1) \
+    && err_msg=$(mv "/tmp/$SCRIPT_NAME" "$SCRIPT_FULL" 2>&1) \
+    && err_msg=$(chmod a+x "$SCRIPT_FULL" 2>&1) \
+    && err_msg=$(curl "$REPO_URL" -o "/tmp/repos.tmp" 2>&1) \
+    && err_msg=$(mv "/tmp/repos.tmp" "$REPO_FILE" 2>&1) \
     || err_flag=1
 
     if [[ $err_flag -ne 0 ]]; then
@@ -457,7 +455,7 @@ function update_script() {
     fi
 
     dialogMsg "SUCCESS!\n\nThe script was successfully updated.\n\nPress enter to run the latest version."
-    [[ -x "$SCRIPT_DIR/$SCRIPT_NAME" ]] && exec "$SCRIPT_DIR/$SCRIPT_NAME" --no-warning
+    [[ -x "$SCRIPT_FULL" ]] && exec "$SCRIPT_FULL" --no-warning
     return 1
 }
 
@@ -716,7 +714,7 @@ function show_image() {
 
 
 function install() {
-    cp "$SCRIPT_FULL" "$REPOS_FILE" "$RP_DIR/retropiemenu/" \
+    cp "$SCRIPT_FULL" "$REPO_FILE" "$RP_DIR/retropiemenu/" \
     && chmod a+x "$SCRIPT_INSTALLED"
     return $?
 }
@@ -725,25 +723,26 @@ function install() {
 # end of other functions ####################################################
 
 
-# START HERE ################################################################
+# main function #############################################################
 
-if ! [[ -d "$(dirname "$ART_DIR")" ]]; then
-    echo "ERROR: $(dirname "$ART_DIR") not found." >&2
-    exit 1
-fi
-mkdir -p "$ART_DIR"
-
-if [[ "$1" == "--install" ]]; then
-    if install; then
-        echo "SUCCESS: the \"$SCRIPT_NAME\" was successfully installed on RetroPie Menu."
-        exit 0
-    else
-        echo "FAIL: failed to install \"$SCRIPT_NAME\" on RetroPie Menu."
+function main() {
+    if ! [[ -d "$(dirname "$ART_DIR")" ]]; then
+        echo "ERROR: $(dirname "$ART_DIR") not found." >&2
         exit 1
     fi
-fi
+    mkdir -p "$ART_DIR"
 
-iniConfig ' = ' '"'
+    if [[ "$1" == "--install" ]]; then
+        if install; then
+            echo "SUCCESS: the \"$SCRIPT_NAME\" was successfully installed on RetroPie Menu."
+            exit 0
+        else
+            echo "FAIL: failed to install \"$SCRIPT_NAME\" on RetroPie Menu."
+            exit 1
+        fi
+    fi
+    iniConfig ' = ' '"'
+    main_menu
+}
 
-main_menu
-echo
+main "$@"
