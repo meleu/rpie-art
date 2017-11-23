@@ -313,7 +313,7 @@ function install_menu() {
         return 1
     fi
 
-    eval install_$art_type || return $?
+    eval install_$art_type
 }
 
 
@@ -618,9 +618,19 @@ function install_launching() {
 
     mkdir -p "$(dirname "$dest_file")"
     cp "$image" "$dest_file"
-    return $?
 }
 
+
+function install_scrape() {
+    local gamelist="$(get_gamelist_xml)" || return 1
+    local dest_dir="$ROMS_DIR/$system/images"
+
+    mkdir -p "$dest_dir"
+    cp "$image" "$dest_dir/$image"
+
+    # TODO: encontrar rom no gamelist.xml (olhar funcao get_rom_name())
+    # TODO: alterar o <image> do gamelist.xml apontando para a nova imagem
+}
 
 
 function get_rom_name() {
@@ -666,6 +676,7 @@ function get_rom_name() {
 
 
 function get_gamelist_xml() {
+    # TODO: change this logic to a for loop
     local gamelist="$HOME/RetroPie/roms/$system/gamelist.xml"
     local gamelist_user="$HOME/.emulationstation/gamelists/$system/gamelist.xml"
     local gamelist_global="/etc/emulationstation/gamelists/$system/gamelist.xml"
@@ -716,7 +727,6 @@ function show_image() {
 function install() {
     cp "$SCRIPT_FULL" "$REPO_FILE" "$RP_DIR/retropiemenu/" \
     && chmod a+x "$SCRIPT_INSTALLED"
-    return $?
 }
 
 
