@@ -3,7 +3,7 @@ Easy way to install art on your RetroPie.
 
 The `rpie-art.sh` is a script that let you easily install [overlays](https://github.com/libretro/RetroArch/wiki/Overlay-image-configuration), [launching images](https://github.com/retropie/retropie-setup/wiki/runcommand#adding-custom-launching-images) and [scrape images](https://github.com/RetroPie/RetroPie-Setup/wiki/Scraper) (not yet implemented) in your RetroPie.
 
-The art files come from other github repositories maintained by other users. You can see the art repository list in the [`repositories.txt` file](https://github.com/meleu/rpie-art/blob/master/rpie-art-repositories.txt).
+The art files come from other github repositories maintained by other users. You can see the art repository list in the [`repositories.txt` file](rpie-art-repositories.txt).
 
 
 ## How to use the script?
@@ -41,7 +41,7 @@ You need to know the configurations needed to make the overlay work. There's a [
 
 ### adding your repository to the rpie-art tool
 
-After creating your github repository, adding some art files and filling some `info.txt` files, you can add your repo to the `rpie-art.sh` script by adding the repo URL and a description in the [`repositories.txt` file](repositories.txt) and submitting a Pull Request (if you don't know how to do it just contact me in the [issue tracker](issues)).
+After creating your github repository, adding some art files and filling some `info.txt` files, you can add your repo to the `rpie-art.sh` script by adding the repo URL and a description in the [`repositories.txt` file](rpie-art-repositories.txt) and submitting a Pull Request (if you don't know how to do it just contact me in the [issue tracker](issues)).
 
 ## Donate
 
