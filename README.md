@@ -10,6 +10,8 @@ The art files come from other github repositories maintained by other users. You
 
 Clone the repo and execute the script, as simple as that.
 
+**Note**: you **MUST** perform the commands below as the user used to launch RetroPie (usually the user `pi` on a Raspberry Pi install). Do **NOT** do this as `root`, otherwise it won't work.
+
 ```
 git clone --depth 1 https://github.com/meleu/rpie-art
 cd rpie-art
