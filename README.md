@@ -63,6 +63,6 @@ If you would like to buy me a beer and say thanks, click the button below.
 
 - To show his infinite gratitude @meleu started to work on a bash script to let the users easily install the Overlay Master's art.
 
-- The file naming conventions needed to make the script work began to be very confusing, then ( @backstander suggested](https://retropie.org.uk/forum/post/65486) the creation of an "information file" where the script gets the info it needs to work. And then the `info.txt` idea was born.
+- The file naming conventions needed to make the script work began to be very confusing, then ( [@backstander suggested](https://retropie.org.uk/forum/post/65486) the creation of an "information file" where the script gets the info it needs to work. And then the `info.txt` idea was born.
 
 - The Overlay Guru's charisma, coupled with the reasonable `info.txt` simplicity, inspired those who have skills with CG software and have begun a new era of custom RetroPie art creation.
