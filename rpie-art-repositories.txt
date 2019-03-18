@@ -1,4 +1,5 @@
 https://github.com/udb23/rpie-ovl "UDb23 overlay (and other arts) repository"
+https://github.com/nono6493/overlays "nono6493 overlay repository"
 https://github.com/Andrew-H2O/RPie-1280-ovl "AndrewH repository for overlays in 1280x1024 resolution"
 https://github.com/backstander/retropie-ovl "backstander overlay repository"
 https://github.com/simbz33/retropie-overlay "simbz33 overlay and launching images repository"
